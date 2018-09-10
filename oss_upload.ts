@@ -2,13 +2,6 @@ import request = require('request');
 import fs = require('fs');
 import md5 = require('md5');
 
-interface Response {
-    code: number;
-    msg: string;
-    data: Policy;
-    token: string;
-}
-
 interface Policy {
     accessid: string;
     policy: string;
@@ -25,9 +18,9 @@ interface Message {
 }
 
 interface Config {
-    baseURL: string;
-    apiPolicy: string;
+    policyUrl: string;
     project: string;
+    decode: (json: string)=>Policy;
 }
 
 type UploadCallback = (error: any, msg?: Message) => void;
@@ -35,15 +28,14 @@ type UploadCallback = (error: any, msg?: Message) => void;
 
 function upload(config: Config, filepath: string, callback: UploadCallback) {
     request
-        .get(config.baseURL + config.apiPolicy + '/' + config.project)
+        .get(config.policyUrl + '/' + config.project)
         .on('response', function(resp: request.Response) {
             let rawData = '';
             resp.on("data", (chunk: any) => {
                 rawData += chunk;
             });
             resp.on('end', () => {
-                let obj: Response = JSON.parse(rawData);
-                postObject(obj.data, filepath, callback);
+                postObject(config.decode(rawData), filepath, callback);
             });
         })
         .on('error', (err)=>{
@@ -94,6 +86,6 @@ function newRequest(p: Policy, filepath: string, filename: string): any{
     };
 }
 
-export {Response, Policy, Message, Config, upload};
+export {Policy, Message, Config, upload};
 export default upload;
 
